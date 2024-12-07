@@ -258,17 +258,27 @@ array_size_deduction_test-coverage: array_size_deduction_test.cc
 	$(CXX) $(CXXFLAGS-NOSANITIZE) $(COVERAGE_EXTRA_FLAGS) $(LDFLAGS-NOSANITIZE)  array_size_deduction_test.cc $(GTESTLIBS) -o $@
 array_size_deduction_test-clangtidy: array_size_deduction_test.cc
 
-atomic-stack_lib_test: atomic-stack.impl.hh atomic-stack_lib_test.cc
-	g++ -std=c++20 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanitize=address,undefined -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) atomic-stack_lib_test.cc $(GMOCKLIBS) -o $@
+atomic-stack_lib_test-gcc-no_sanitize: atomic-stack.impl.hh atomic-stack_lib_test.cc
+	g++ -std=c++20 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) atomic-stack_lib_test.cc $(GMOCKLIBS) -o $@
 
 # -lc++ specifies the LLVM libc
-atomic-stack_lib_test-clang: atomic-stack.impl.hh atomic-stack_lib_test.cc
-	clang++ -lc++ -std=c++20 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanitize=address,undefined -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) atomic-stack_lib_test.cc $(GMOCKLIBS) -o $@
+atomic-stack_lib_test-clang-no_sanitize: atomic-stack.impl.hh atomic-stack_lib_test.cc
+	clang++ -lc++ -std=c++20 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) atomic-stack_lib_test.cc $(GMOCKLIBS) -o $@
 
 atomic-stack_lib_test-clangtidy: atomic-stack.impl.hh atomic-stack_lib_test.cc
 	$(CLANG_TIDY_BINARY) $(CLANG_TIDY_OPTIONS) -checks=$(CLANG_TIDY_CHECKS) $^ -- -std=c++20 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS)  $(GMOCKLIBS)  -o $@
 
-BINARY_LIST = calc_num_digits gcd gcd_lib_test reverse_char_stack_lib_test dyn_string_lib_test dyn_string notqsort notqsort_lib_test dbl_vector_lib_test slist_lib_test slist2_lib_test matrix_lib_test matrix_lib_test_debug term_lib_test polynomial_lib_test polynomial_lib_test_debug reference_count_string_lib_test rational_lib_test complex_lib_test complex_vector_lib_test reference_count_string_timer reference_count_string_timer_debug smarter_stack_lib_test smarter_queue_lib_test smarter_list_lib_test new_clock_lib_test template_stack_lib_test const_template_stack_lib_test macro-vs-template template_cycle_lib_test template_rotate_lib_test template_vector_lib_test template_vector_lib_test_debug template_vector_main template_list_lib_test template_largest_lib_test template_integrate_lib_test reverse_list_lib_test student_inheritance_lib_test one_index_vector_lib_test override_vs_overload_main multiple_inheritance_lib_test array_size_deduction_test address-of-function-parameter fibonacci atomic-stack_lib_test atomic-stack_lib_test-clang
+atomic-mutex_lib_test-gcc: atomic-mutex.hh atomic-mutex_lib_test.cc
+	g++ -std=c++20 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanitize=address,undefined -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) atomic-mutex_lib_test.cc $(GMOCKLIBS) -o $@
+
+atomic-mutex_lib_test-gcc-no_sanitize: atomic-mutex.hh atomic-mutex_lib_test.cc
+	g++ -std=c++20 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline  -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) atomic-mutex_lib_test.cc $(GMOCKLIBS) -o $@
+
+# -lc++ specifies the LLVM libc
+atomic-mutex_lib_test-clang-no_sanitize: atomic-mutex.hh atomic-mutex_lib_test.cc
+	clang++ -lc++ -std=c++20 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) atomic-mutex_lib_test.cc $(GMOCKLIBS) -o $@
+
+BINARY_LIST = calc_num_digits gcd gcd_lib_test reverse_char_stack_lib_test dyn_string_lib_test dyn_string notqsort notqsort_lib_test dbl_vector_lib_test slist_lib_test slist2_lib_test matrix_lib_test matrix_lib_test_debug term_lib_test polynomial_lib_test polynomial_lib_test_debug reference_count_string_lib_test rational_lib_test complex_lib_test complex_vector_lib_test reference_count_string_timer reference_count_string_timer_debug smarter_stack_lib_test smarter_queue_lib_test smarter_list_lib_test new_clock_lib_test template_stack_lib_test const_template_stack_lib_test macro-vs-template template_cycle_lib_test template_rotate_lib_test template_vector_lib_test template_vector_lib_test_debug template_vector_main template_list_lib_test template_largest_lib_test template_integrate_lib_test reverse_list_lib_test student_inheritance_lib_test one_index_vector_lib_test override_vs_overload_main multiple_inheritance_lib_test array_size_deduction_test address-of-function-parameter fibonacci atomic-stack_lib_test-clang-no_sanitize atomic-stack_lib_test-gcc-no_sanitize atomic-mutex_lib_test-gcc-no_sanitize atomic-mutex_lib_test-clang-no_sanitize
 
 # Same list as above, but with main binaries and _debug targets removed.
 # Removed const_template_stack_lib_test.
