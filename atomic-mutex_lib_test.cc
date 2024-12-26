@@ -12,9 +12,12 @@ TEST(AtomicMutexTest, BasicTest) {
   std::size_t counter2 = 0;
 
   // Declaring increment() with reference arguments does not suffice.
-  std::thread t1{incrementer, std::ref(counter1), std::ref(counter2)};
-  std::thread t2{incrementer, std::ref(counter1), std::ref(counter2)};
-  std::thread t3{incrementer, std::ref(counter1), std::ref(counter2)};
+  std::thread t1{incrementer<std::size_t>, std::ref(counter1),
+                 std::ref(counter2)};
+  std::thread t2{incrementer<std::size_t>, std::ref(counter1),
+                 std::ref(counter2)};
+  std::thread t3{incrementer<std::size_t>, std::ref(counter1),
+                 std::ref(counter2)};
 
   t1.join();
   t2.join();
