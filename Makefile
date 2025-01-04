@@ -41,17 +41,15 @@ USDT_LIBS=$(USDT_LIB_PATH)/libbcc.a $(USDT_LIB_PATH)/libbcc_bpf.a
 # argument just as usual. You could use this override directive:
 #     override CFLAGS += -g
 #"
-override CXXFLAGS+= -std=c++17 -pthread -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanitize=address,undefined -I$(GTEST_HEADERS)
+override CXXFLAGS+= -std=c++17 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanitize=address,undefined -I$(GTEST_HEADERS)
 CXXFLAGS-NOTEST= -std=c++17 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanitize=address,undefined
-CXXFLAGS-NOSANITIZE= -std=c++17 -pthread -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -I$(GTEST_HEADERS)
+CXXFLAGS-NOSANITIZE= -std=c++17 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -I$(GTEST_HEADERS)
+CXXFLAGS-TSAN= -std=c++17 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanitize=undefined,thread -I$(GTEST_HEADERS)
 USDT_FLAGS= -I$(USDT_HEADERS)
 
 LDFLAGS= -ggdb -g -fsanitize=address -L$(GTESTLIBPATH)
 LDFLAGS-NOSANITIZE= -ggdb -g -L$(GTESTLIBPATH)
 LDFLAGS-NOTEST= -ggdb -g -fsanitize=address
-#LDFLAGS= -ggdb -g -L$(GTESTLIBPATH) -lpthread
-#THREADFLAGS= -D_REENTRANT -I/usr/include/ntpl -L/usr/lib/nptl -lpthread
-THREADFLAGS= -D_REENTRANT -lpthread
 #https://gcc.gnu.org/ml/gcc-help/2003-08/msg00128.html
 DEADCODESTRIP := -Wl,-static -fvtable-gc -fdata-sections -ffunction-sections -Wl,--gc-sections -Wl,-s
 # gcc and clang won't automatically link .cc files against the standard library.
@@ -257,11 +255,14 @@ array_size_deduction_test-coverage: array_size_deduction_test.cc
 	$(CXX) $(CXXFLAGS-NOSANITIZE) $(COVERAGE_EXTRA_FLAGS) $(LDFLAGS-NOSANITIZE)  array_size_deduction_test.cc $(GTESTLIBS) -o $@
 array_size_deduction_test-clangtidy: array_size_deduction_test.cc
 
-atomic-stack_lib_test-gcc-no_sanitize: atomic-stack.impl.hh atomic-stack_lib_test.cc
+atomic-stack_lib_test-gcc-nosanitize: atomic-stack.impl.hh atomic-stack_lib_test.cc
 	g++ -std=c++20 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) atomic-stack_lib_test.cc $(GMOCKLIBS) -o $@
 
+atomic-stack_lib_test-tsan: atomic-stack.impl.hh atomic-stack_lib_test.cc
+	g++ -std=c++20 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanitize=thread,undefined -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) atomic-stack_lib_test.cc $(GMOCKLIBS) -o $@
+
 # -lc++ specifies the LLVM libc
-atomic-stack_lib_test-clang-no_sanitize: atomic-stack.impl.hh atomic-stack_lib_test.cc
+atomic-stack_lib_test-clang-nosanitize: atomic-stack.impl.hh atomic-stack_lib_test.cc
 	clang++ -lc++ -std=c++20 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) atomic-stack_lib_test.cc $(GMOCKLIBS) -o $@
 
 atomic-stack_lib_test-clangtidy: atomic-stack.impl.hh atomic-stack_lib_test.cc
@@ -270,17 +271,27 @@ atomic-stack_lib_test-clangtidy: atomic-stack.impl.hh atomic-stack_lib_test.cc
 atomic-mutex_lib_test-gcc: atomic-mutex.hh atomic-mutex_lib_test.cc
 	g++ -std=c++20 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanitize=address,undefined -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) atomic-mutex_lib_test.cc $(GMOCKLIBS) -o $@
 
-atomic-mutex_lib_test-gcc-no_sanitize: atomic-mutex.hh atomic-mutex_lib_test.cc
+atomic-mutex_lib_test-tsan: atomic-mutex.hh atomic-mutex_lib_test.cc
+	g++ -std=c++20 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanitize=thread,undefined -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) atomic-mutex_lib_test.cc $(GMOCKLIBS) -o $@
+
+atomic-mutex_lib_test-gcc-nosanitize: atomic-mutex.hh atomic-mutex_lib_test.cc
 	g++ -std=c++20 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline  -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) atomic-mutex_lib_test.cc $(GMOCKLIBS) -o $@
 
 # -lc++ specifies the LLVM libc
-atomic-mutex_lib_test-clang-no_sanitize: atomic-mutex.hh atomic-mutex_lib_test.cc
+atomic-mutex_lib_test-clang-nosanitize: atomic-mutex.hh atomic-mutex_lib_test.cc
 	clang++ -lc++ -std=c++20 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) atomic-mutex_lib_test.cc $(GMOCKLIBS) -o $@
 
-condvar-pthread_lib_test: condvar-pthread.hh condvar-pthread_lib.cc condvar-pthread_lib_test.cc
-	$(CXX)  $(CXXFLAGS-NOSANITIZE) $(LDFLAGS-NOSANITIZE) -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) condvar-pthread_lib.cc condvar-pthread_lib_test.cc $(GMOCKLIBS) -o $@
+# Sanitizers produce a lot of uninteresting strace output.
+# https://stackoverflow.com/questions/20673370/why-do-we-write-d-reentrant-while-compiling-c-code-using-threads
+# "the recommended way to compile with threads in GCC is using the -pthread option. It is equivalent to -lpthread -D_REENTRANT"
+# -D_REENTRANT tells the compiler to use the declarations (functions, types, ...) necessary for thread usage.
+condvar-pthread_lib_test-nosanitize: condvar-pthread.hh condvar-pthread_lib.cc condvar-pthread_lib_test.cc
+	$(CXX)  $(CXXFLAGS-NOSANITIZE) $(LDFLAGS-NOSANITIZE) -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) condvar-pthread_lib.cc condvar-pthread_lib_test.cc $(GMOCKLIBS)  -pthread -o $@
 
-BINARY_LIST = calc_num_digits gcd gcd_lib_test reverse_char_stack_lib_test dyn_string_lib_test dyn_string notqsort notqsort_lib_test dbl_vector_lib_test slist_lib_test slist2_lib_test matrix_lib_test matrix_lib_test_debug term_lib_test polynomial_lib_test polynomial_lib_test_debug reference_count_string_lib_test rational_lib_test complex_lib_test complex_vector_lib_test reference_count_string_timer reference_count_string_timer_debug smarter_stack_lib_test smarter_queue_lib_test smarter_list_lib_test new_clock_lib_test template_stack_lib_test const_template_stack_lib_test macro-vs-template template_cycle_lib_test template_rotate_lib_test template_vector_lib_test template_vector_lib_test_debug template_vector_main template_list_lib_test template_largest_lib_test template_integrate_lib_test reverse_list_lib_test student_inheritance_lib_test one_index_vector_lib_test override_vs_overload_main multiple_inheritance_lib_test array_size_deduction_test address-of-function-parameter fibonacci atomic-stack_lib_test-clang-no_sanitize atomic-stack_lib_test-gcc-no_sanitize atomic-mutex_lib_test-gcc atomic-mutex_lib_test-gcc-no_sanitize atomic-mutex_lib_test-clang-no_sanitize
+condvar-pthread_lib_test-tsan: condvar-pthread.hh condvar-pthread_lib.cc condvar-pthread_lib_test.cc
+	$(CXX)  $(CXXFLAGS-TSAN) $(LDFLAGS-NOSANITIZE) -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) condvar-pthread_lib.cc condvar-pthread_lib_test.cc $(GMOCKLIBS)  -pthread -o $@
+
+BINARY_LIST = calc_num_digits gcd gcd_lib_test reverse_char_stack_lib_test dyn_string_lib_test dyn_string notqsort notqsort_lib_test dbl_vector_lib_test slist_lib_test slist2_lib_test matrix_lib_test matrix_lib_test_debug term_lib_test polynomial_lib_test polynomial_lib_test_debug reference_count_string_lib_test rational_lib_test complex_lib_test complex_vector_lib_test reference_count_string_timer reference_count_string_timer_debug smarter_stack_lib_test smarter_queue_lib_test smarter_list_lib_test new_clock_lib_test template_stack_lib_test const_template_stack_lib_test macro-vs-template template_cycle_lib_test template_rotate_lib_test template_vector_lib_test template_vector_lib_test_debug template_vector_main template_list_lib_test template_largest_lib_test template_integrate_lib_test reverse_list_lib_test student_inheritance_lib_test one_index_vector_lib_test override_vs_overload_main multiple_inheritance_lib_test array_size_deduction_test address-of-function-parameter fibonacci atomic-stack_lib_test-clang-nosanitize atomic-stack_lib_test-gcc-nosanitize atomic-stack_lib_test-tsan atomic-mutex_lib_test-gcc atomic-mutex_lib_test-tsan atomic-mutex_lib_test-gcc-nosanitize atomic-mutex_lib_test-clang-nosanitize condvar-pthread_lib_test-nosanitize condvar-pthread_lib_test-tsan
 
 # Same list as above, but with main binaries and _debug targets removed.
 # Removed const_template_stack_lib_test.
