@@ -12,7 +12,7 @@ constexpr std::size_t CYCLES = 1000;
 // For pthread_cond_timedwait().
 const struct timespec TIMEOUT{
     .tv_sec = 0,
-    .tv_nsec = 10'000,
+    .tv_nsec = 1000,
 };
 
 enum class Parity { even, odd };
@@ -55,6 +55,7 @@ public:
 
 private:
   pthread_cond_t cond_;
+  // The lock serializes accesses to ctr_.
   pthread_mutex_t mutex_;
   std::size_t ctr_;
 };

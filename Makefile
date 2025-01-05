@@ -288,6 +288,10 @@ atomic-mutex_lib_test-clang-nosanitize: atomic-mutex.hh atomic-mutex_lib_test.cc
 condvar-pthread_lib_test-nosanitize: condvar-pthread.hh condvar-pthread_lib.cc condvar-pthread_lib_test.cc
 	$(CXX)  $(CXXFLAGS-NOSANITIZE) $(LDFLAGS-NOSANITIZE) -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) condvar-pthread_lib.cc condvar-pthread_lib_test.cc $(GMOCKLIBS)  -pthread -o $@
 
+# ASAN and UBSAN, but not TSAN
+condvar-pthread_lib_test: condvar-pthread.hh condvar-pthread_lib.cc condvar-pthread_lib_test.cc
+	$(CXX)  $(CXXFLAGS) $(LDFLAGS) -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) condvar-pthread_lib.cc condvar-pthread_lib_test.cc $(GMOCKLIBS)  -pthread -o $@
+
 condvar-pthread_lib_test-tsan: condvar-pthread.hh condvar-pthread_lib.cc condvar-pthread_lib_test.cc
 	$(CXX)  $(CXXFLAGS-TSAN) $(LDFLAGS-NOSANITIZE) -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) condvar-pthread_lib.cc condvar-pthread_lib_test.cc $(GMOCKLIBS)  -pthread -o $@
 
