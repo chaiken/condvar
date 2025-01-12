@@ -44,7 +44,7 @@ USDT_LIBS=$(USDT_LIB_PATH)/libbcc.a $(USDT_LIB_PATH)/libbcc_bpf.a
 override CXXFLAGS+= -std=c++17 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanitize=address,undefined -I$(GTEST_HEADERS)
 CXXFLAGS-NOTEST= -std=c++17 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanitize=address,undefined
 CXXFLAGS-NOSANITIZE= -std=c++17 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -I$(GTEST_HEADERS)
-CXXFLAGS-TSAN= -std=c++17 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanitize=undefined,thread -I$(GTEST_HEADERS)
+CXXFLAGS-TSAN= -std=c++17 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanitize=thread -I$(GTEST_HEADERS)
 USDT_FLAGS= -I$(USDT_HEADERS)
 
 LDFLAGS= -ggdb -g -fsanitize=address -L$(GTESTLIBPATH)
