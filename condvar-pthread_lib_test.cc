@@ -9,12 +9,15 @@
 
 namespace pthread_condvar {
 
+using namespace std::chrono;
+
 constexpr std::size_t NUM_THREADS = 4;
 
 struct CondvarPthreadTest : public ::testing::Test {
   std::function<void(const Parity)> parity_changer;
 
   void LaunchThreads() {
+    const time_point<steady_clock> start = steady_clock::now();
     try {
       std::thread t1(parity_changer, Parity::odd);
       std::thread t2(parity_changer, Parity::even);
@@ -28,6 +31,10 @@ struct CondvarPthreadTest : public ::testing::Test {
     } catch (const std::system_error &se) {
       std::cerr << "Failed with " << se.what() << std::endl;
     }
+    const time_point<steady_clock> finish = steady_clock::now();
+    std::cout << "Elapsed: "
+              << duration_cast<microseconds>(finish - start).count()
+              << " microS" << std::endl;
   }
 };
 
