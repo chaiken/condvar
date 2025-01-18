@@ -44,8 +44,10 @@ void PthreadCondvar::change_parity_or_block(const Parity new_parity) {
       // Must check ctr_ again since the first read is outside  the lock.
       while (is_even()) {
         pthread_cond_wait(&cond_, &mutex_);
-        if (CYCLES <= ctr_)
-          break;
+        if (CYCLES <= ctr_) {
+          pthread_mutex_unlock(&mutex_);
+          return;
+        }
       }
       // Guard against spurious wakeups.
       if (is_odd())
@@ -53,8 +55,10 @@ void PthreadCondvar::change_parity_or_block(const Parity new_parity) {
     } else {
       while (is_odd()) {
         pthread_cond_wait(&cond_, &mutex_);
-        if (CYCLES <= ctr_)
-          break;
+        if (CYCLES <= ctr_) {
+          pthread_mutex_unlock(&mutex_);
+          return;
+        }
       }
       if (is_even())
         ctr_++;
@@ -65,11 +69,12 @@ void PthreadCondvar::change_parity_or_block(const Parity new_parity) {
       should_return = true;
 
     pthread_mutex_unlock(&mutex_);
+    // No need to signal if work is done.
+    if (should_return)
+      break;
     // Will quickly hang if pthread_cond_signal() is used instead when two
     // threads of the same parity signal each other and both block.
     pthread_cond_broadcast((&cond_));
-    if (should_return)
-      break;
   } while (true);
 }
 
