@@ -44,8 +44,14 @@ void PthreadCondvar::change_parity_or_block(const Parity new_parity) {
       // Must check ctr_ again since the first read is outside  the lock.
       while (is_even()) {
         pthread_cond_wait(&cond_, &mutex_);
-        if (CYCLES <= ctr_)
+        // breaking rather than returning causes extra wakeups after exit
+        // condition is achieved, but skipping them means that final waiters may
+        // never wake.
+        if (CYCLES <= ctr_) {
+          // Cache the value since ctr_ must be checked inside the lock.
+          should_return = true;
           break;
+        }
       }
       // Guard against spurious wakeups.
       if (is_odd())
@@ -53,23 +59,21 @@ void PthreadCondvar::change_parity_or_block(const Parity new_parity) {
     } else {
       while (is_odd()) {
         pthread_cond_wait(&cond_, &mutex_);
-        if (CYCLES <= ctr_)
+        if (CYCLES <= ctr_) {
+          should_return = true;
           break;
+        }
       }
       if (is_even())
         ctr_++;
     }
-
-    // Check ctr_ inside the mutex to placate tsan.
-    if (CYCLES <= ctr_)
-      should_return = true;
 
     pthread_mutex_unlock(&mutex_);
     // Will quickly hang if pthread_cond_signal() is used instead when two
     // threads of the same parity signal each other and both block.
     pthread_cond_broadcast((&cond_));
     if (should_return)
-      break;
+      return;
   } while (true);
 }
 
@@ -77,7 +81,6 @@ void PthreadCondvar::change_parity_or_timeout(const Parity new_parity) {
   do {
     int err = pthread_mutex_trylock(&mutex_);
     if (EBUSY == err) {
-      usleep(10);
       continue;
     } else if (err) {
       std::cerr << "Failed to lock mutex: " << strerror(errno) << std::endl;
