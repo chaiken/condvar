@@ -10,7 +10,10 @@ namespace stl_condvar {
 void StlCondvar::change_parity_or_block(const Parity new_parity) {
   while (true) {
     {
-      std::unique_lock<std::mutex> lock(mutex_);
+      std::unique_lock<std::mutex> lock(mutex_, std::defer_lock);
+      if (!lock.try_lock()) {
+        continue;
+      }
       if (CYCLES < ctr_) {
         return;
       }
@@ -52,7 +55,10 @@ void StlCondvar::change_parity_or_timeout(const Parity new_parity) {
   while (true) {
     bool should_signal = false;
     {
-      std::unique_lock<std::mutex> lock(mutex_);
+      std::unique_lock<std::mutex> lock(mutex_, std::defer_lock);
+      if (!lock.try_lock()) {
+        continue;
+      }
       if (CYCLES < ctr_) {
         return;
       }
@@ -86,9 +92,10 @@ void StlCondvar::change_parity_or_timeout(const Parity new_parity) {
       }
     }
     // Because the code makes progress even if the wrong waiter is awoken,
-    // signalling one works fine.
+    // signalling one works fine.   However, notify_all() is much faster,
+    // perhaps by as much as a factor of 2.
     if (should_signal) {
-      cond_.notify_one();
+      cond_.notify_all();
     }
   }
 }
