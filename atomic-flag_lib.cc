@@ -18,7 +18,6 @@ void AtomicFlag::change_parity_or_block(const Parity new_parity) {
       return;
     }
     if (Parity::even == new_parity) {
-      ctr_++;
       if (is_odd()) {
         ctr_++;
         flag_.clear(std::memory_order_release);
