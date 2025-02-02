@@ -30,3 +30,20 @@
 *.exe
 *.out
 *.app
+
+*~
+*cscope*
+
+# gcov files
+*.gcda
+*.gcno
+*.info
+*.png
+*.html
+*.css
+*.pdf
+*.txt
+
+.gdb_history
+
+notes
