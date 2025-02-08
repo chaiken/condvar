@@ -10,13 +10,14 @@ GTESTLIBPATH=$(GTEST_DIR)/build/lib
 # g++ -std=c++11 -isystem ${GTEST_DIR}/include -I${GTEST_DIR} -pthread -c ${GTEST_DIR}/src/gtest-all.cc
 # cd make; make all
 # 'make' in the README.md above doesn't create libgtest_main.a.  'make all' does.
-GTESTLIBS= $(GTESTLIBPATH)/libgtest.a $(GTESTLIBPATH)/libgtest_main.a
 GMOCK_HEADERS = $(GTEST_DIR)/googlemock/include
 # Reordering the list below will cause a linker failure.  libgmock_main.a must apparently appear before libgmock.a.
 GMOCKLIBS=$(GTESTLIBPATH)/libgmock_main.a $(GTESTLIBPATH)/libgmock.a  $(GTESTLIBPATH)/libgtest.a
 
-# Where to find user code.
-USER_DIR = .
+# https://github.com/linux-rt/librtpi.git
+LIBRTPI_PATH=$(HOME)/gitsrc/librtpi
+LIBRTPI_HEADERS=$(LIBRTPI_PATH)/src
+LIBRTPI_LIBS=$(LIBRTPI_PATH)/librtpi.a
 
 # Note -pthread, not -lpthread.   Without this option, Googletest does not compile.
 # How to allow users to add -DDEBUG (for example) to the cmdline:
@@ -35,11 +36,8 @@ CXXFLAGS-TSAN= -std=c++17 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -fsanit
 LDFLAGS= -ggdb -g -fsanitize=address -L$(GTESTLIBPATH)
 LDFLAGS-NOSANITIZE= -ggdb -g -L$(GTESTLIBPATH)
 LDFLAGS-NOTEST= -ggdb -g -fsanitize=address
-#https://gcc.gnu.org/ml/gcc-help/2003-08/msg00128.html
-DEADCODESTRIP := -Wl,-static -fvtable-gc -fdata-sections -ffunction-sections -Wl,--gc-sections -Wl,-s
 # gcc and clang won't automatically link .cc files against the standard library.
 CXX=/usr/bin/g++
-#CXX=/usr/local/bin/g++
 #CXX=/usr/bin/clang++
 
 atomic-stack_lib_test-gcc-nosanitize: atomic-stack.impl.hh atomic-stack_lib_test.cc
@@ -100,7 +98,16 @@ atomic-flag_lib_test-tsan: atomic-flag.hh atomic-flag_lib.cc atomic-flag_lib_tes
 atomic-flag_lib_test-nosanitize: atomic-flag.hh atomic-flag_lib.cc atomic-flag_lib_test.cc
 	g++ -std=c++20 -ggdb -Wall -Wextra -Werror -g -O0 -fno-inline -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) atomic-flag_lib.cc atomic-flag_lib_test.cc $(GMOCKLIBS) -o $@
 
-BINARY_LIST = atomic-stack_lib_test-clang-nosanitize atomic-stack_lib_test-gcc-nosanitize atomic-stack_lib_test-tsan atomic-mutex_lib_test-gcc atomic-mutex_lib_test-tsan atomic-mutex_lib_test-gcc-nosanitize atomic-mutex_lib_test-clang-nosanitize condvar-pthread_lib_test-nosanitize condvar-pthread_lib_test-tsan condvar-stl_lib_test condvar-stl_lib_test-nosanitize condvar-stl_lib_test-tsan atomic-flag_lib_test atomic-flag_lib_test-nosanitize atomic-flag_lib_test-tsan
+condvar-rtpi_lib_test: condvar-rtpi.hh condvar-rtpi_lib.cc condvar-rtpi_lib_test.cc
+	$(CXX)  $(CXXFLAGS) $(LDFLAGS) -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) -I$(LIBRTPI_HEADERS) condvar-rtpi_lib.cc condvar-rtpi_lib_test.cc $(GMOCKLIBS) $(LIBRTPI_LIBS) -o $@
+
+condvar-rtpi_lib_test-nosanitize: condvar-rtpi.hh condvar-rtpi_lib.cc condvar-rtpi_lib_test.cc
+	$(CXX)  $(CXXFLAGS-NOSANITIZE) $(LDFLAGS-NOSANITIZE) -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) -I$(LIBRTPI_HEADERS) condvar-rtpi_lib.cc condvar-rtpi_lib_test.cc $(GMOCKLIBS) $(LIBRTPI_LIBS)  -o $@
+
+condvar-rtpi_lib_test-tsan: condvar-rtpi.hh condvar-rtpi_lib.cc condvar-rtpi_lib_test.cc
+	$(CXX)  $(CXXFLAGS-TSAN) $(LDFLAGS-NOSANITIZE) -I$(GTEST_HEADERS) -I$(GMOCK_HEADERS) -I$(LIBRTPI_HEADERS) condvar-rtpi_lib.cc condvar-rtpi_lib_test.cc $(GMOCKLIBS) $(LIBRTPI_LIBS) -o $@
+
+BINARY_LIST = atomic-stack_lib_test-clang-nosanitize atomic-stack_lib_test-gcc-nosanitize atomic-stack_lib_test-tsan atomic-mutex_lib_test-gcc atomic-mutex_lib_test-tsan atomic-mutex_lib_test-gcc-nosanitize atomic-mutex_lib_test-clang-nosanitize condvar-pthread_lib_test-nosanitize condvar-pthread_lib_test-tsan condvar-stl_lib_test condvar-stl_lib_test-nosanitize condvar-stl_lib_test-tsan atomic-flag_lib_test atomic-flag_lib_test-nosanitize atomic-flag_lib_test-tsan condvar-rtpi_lib_test condvar-rtpi_lib_test-nosanitize condvar-rtpi_lib_test-tsan
 
 clean:
 	rm -rf *.o *~ $(BINARY_LIST) *_test *-coverage *-valgrind *.gcda *.gcov *.gcno *.info *_output *css *html a.out *rej *orig
