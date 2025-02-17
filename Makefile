@@ -17,7 +17,7 @@ GMOCKLIBS=$(GTESTLIBPATH)/libgmock_main.a $(GTESTLIBPATH)/libgmock.a  $(GTESTLIB
 # https://github.com/linux-rt/librtpi.git
 LIBRTPI_PATH=$(HOME)/gitsrc/librtpi
 LIBRTPI_HEADERS=$(LIBRTPI_PATH)/src
-LIBRTPI_LIBS=$(LIBRTPI_PATH)/librtpi.a
+LIBRTPI_LIBS=$(LIBRTPI_PATH)/src/.libs/librtpi.a
 
 # Note -pthread, not -lpthread.   Without this option, Googletest does not compile.
 # How to allow users to add -DDEBUG (for example) to the cmdline:
